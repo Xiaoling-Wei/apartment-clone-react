@@ -2,6 +2,13 @@ import React, { useState } from 'react'
 import { IoEye,IoEyeOff } from "react-icons/io5";
 import { Link } from 'react-router-dom';
 import OAuth from '../components/OAuth';
+import { getAuth, createUserWithEmailAndPassword,updateProfile } from 'firebase/auth';
+import {db} from "../firebase"
+import { doc, serverTimestamp } from 'firebase/firestore';
+import { setDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
 
 export default function SignUp() {
     const [showPassword,setShowPassword] = useState(false);
@@ -11,24 +18,47 @@ export default function SignUp() {
         password:"",
     });
     const {name,email, password} = formData;
+    const navigate = useNavigate()
     function onChange(e){
         setFormData((prevState) => ({
             ...prevState,
             [e.target.id]: e.target.value
         }));
     }
+    async function onSubmit(e){
+         e.preventDefault();
 
+         try {
+            const auth = getAuth()
+            const userCredential =  await createUserWithEmailAndPassword(auth,email,password)
+            
+            updateProfile(auth.currentUser,{
+                displayName: name
+            })
+            const user = userCredential.user
+            const formDataCopy = {...formData}
+            delete formDataCopy.password
+            formDataCopy.timestamp = serverTimestamp();
+
+            await setDoc(doc(db,"users",user.uid),formDataCopy)
+            toast.success("Sign up is successful !")
+            navigate("/") // to the home pag
+        } catch (error) {
+            toast.error("Something wrong !")
+         }
+    }
   return (
     <section>
         <h1 className='text-3xl text-center mt-auto font-bold'> Sign Up</h1>
-        <div className='flex justify-center flex-wrap items-center px-1 py-12 max-w-6x mx-auto '>
+        <div className='flex justify-center flex-wrap items-center px-1 py-12 max-w-6xl mx-auto '>
             <div className="md:w-[67%]  lg:w-[45%] mb-12 md:mb-6">
                 <img src="https://plus.unsplash.com/premium_photo-1663126298656-33616be83c32?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8YXBhcnRtZW50JTIwaW50ZXJpb3J8ZW58MHx8MHx8fDA%3D" 
                 alt="house" 
                 className='w-full rounded-2xl'
                 />
             </div>
-            <div className='md:w-[33%] lg:-w[40%] lg:ml-20'>
+            <div className='md:w-[33%] lg:w-[40%] lg:ml-20'>
+                <form onSubmit={onSubmit}>
             <input type="text" id="name" 
                     value={name} onChange={onChange} placeholder='Full name'
                     className="mb-6 w-full px-4 py-2 text-xl text-gray-900 bg-white
@@ -73,7 +103,9 @@ export default function SignUp() {
              after:border-gray-300'>
                 <p className='text-center font-bold mx-4'>OR</p>
             </div>
+            
             <OAuth />
+            </form>
             </div>
             
         </div>

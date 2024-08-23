@@ -1,12 +1,25 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom';
 import OAuth from '../components/OAuth';
+import { toast } from 'react-toastify';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
 export default function SignIn() {
     const [email,setEmail] = useState("");
   
     function onChange(e){
         setEmail(e.target.value);
+    }
+
+    async function onSubmit(e){
+        e.preventDefault();
+        try {
+            const auth = getAuth()
+            await sendPasswordResetEmail(auth,email)
+            toast.success("Email is sent")
+        } catch (error) {
+            toast.error(`send email is defeat: ${error.message}`)
+        }
     }
 
   return (
@@ -20,6 +33,7 @@ export default function SignIn() {
                 />
             </div>
             <div className='md:w-[33%] lg:-w[40%] lg:ml-20'>
+                <form onSubmit={onSubmit}> 
                     <input type="email" id="email" 
                     value={email} onChange={onChange} placeholder='Email address'
                     className="mb-6 w-full px-4 py-2 text-xl text-gray-900 bg-white
@@ -48,8 +62,9 @@ export default function SignIn() {
                 <p className='text-center font-bold mx-4'>OR</p>
             </div>
             <OAuth />
+            </form>
             </div>
-            
+          
         </div>
     </section>
   )
